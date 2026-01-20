@@ -1,32 +1,103 @@
 import { useState } from "react";
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { HomeScreen } from "@/components/screens/HomeScreen";
-import { SpacesScreen } from "@/components/screens/SpacesScreen";
-import { CommunityScreen } from "@/components/screens/CommunityScreen";
+import { SpacesScreen, spacesData } from "@/components/screens/SpacesScreen";
+import { SpaceDetailScreen } from "@/components/screens/SpaceDetailScreen";
+import { CommunityScreen, studentActivitiesData, expertsData } from "@/components/screens/CommunityScreen";
+import { StudentActivityDetailScreen } from "@/components/screens/StudentActivityDetailScreen";
+import { ExpertDetailScreen } from "@/components/screens/ExpertDetailScreen";
 import { ProfileScreen } from "@/components/screens/ProfileScreen";
 
+type Screen = 
+  | { type: "home" }
+  | { type: "spaces" }
+  | { type: "space-detail"; space: typeof spacesData[0] }
+  | { type: "community" }
+  | { type: "activity-detail"; activity: typeof studentActivitiesData[0] }
+  | { type: "expert-detail"; expert: typeof expertsData[0] }
+  | { type: "profile" };
+
 const Index = () => {
+  const [screen, setScreen] = useState<Screen>({ type: "home" });
   const [activeTab, setActiveTab] = useState("home");
 
-  const renderScreen = () => {
-    switch (activeTab) {
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    switch (tab) {
       case "home":
-        return <HomeScreen onNavigateToSpaces={() => setActiveTab("spaces")} />;
+        setScreen({ type: "home" });
+        break;
       case "spaces":
-        return <SpacesScreen />;
+        setScreen({ type: "spaces" });
+        break;
       case "community":
-        return <CommunityScreen />;
+        setScreen({ type: "community" });
+        break;
       case "profile":
-        return <ProfileScreen />;
-      default:
-        return <HomeScreen onNavigateToSpaces={() => setActiveTab("spaces")} />;
+        setScreen({ type: "profile" });
+        break;
     }
   };
+
+  const renderScreen = () => {
+    switch (screen.type) {
+      case "home":
+        return <HomeScreen onNavigateToSpaces={() => handleTabChange("spaces")} />;
+      
+      case "spaces":
+        return (
+          <SpacesScreen
+            onSelectSpace={(space) => setScreen({ type: "space-detail", space })}
+          />
+        );
+      
+      case "space-detail":
+        return (
+          <SpaceDetailScreen
+            space={screen.space}
+            onBack={() => setScreen({ type: "spaces" })}
+          />
+        );
+      
+      case "community":
+        return (
+          <CommunityScreen
+            onSelectActivity={(activity) => setScreen({ type: "activity-detail", activity })}
+            onSelectExpert={(expert) => setScreen({ type: "expert-detail", expert })}
+          />
+        );
+      
+      case "activity-detail":
+        return (
+          <StudentActivityDetailScreen
+            activity={screen.activity}
+            onBack={() => setScreen({ type: "community" })}
+          />
+        );
+      
+      case "expert-detail":
+        return (
+          <ExpertDetailScreen
+            expert={screen.expert}
+            onBack={() => setScreen({ type: "community" })}
+          />
+        );
+      
+      case "profile":
+        return <ProfileScreen />;
+      
+      default:
+        return <HomeScreen onNavigateToSpaces={() => handleTabChange("spaces")} />;
+    }
+  };
+
+  // Hide bottom nav on detail screens
+  const showBottomNav = !["space-detail", "activity-detail", "expert-detail"].includes(screen.type);
 
   return (
     <div className="min-h-screen bg-background">
       {renderScreen()}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {showBottomNav && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
     </div>
   );
 };

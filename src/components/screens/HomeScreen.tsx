@@ -1,7 +1,7 @@
 import { Search, Bell, Sparkles } from "lucide-react";
 import { QuickBookCard } from "@/components/home/QuickBookCard";
 import { UpcomingBookingCard } from "@/components/home/UpcomingBookingCard";
-import coworkingMain from "@/assets/spaces/coworking-main.jpg";
+import logo from "@/assets/logo.jpg";
 import meetingRoom from "@/assets/spaces/meeting-room.jpg";
 import focusPod from "@/assets/spaces/focus-pod.jpg";
 
@@ -45,32 +45,35 @@ export const HomeScreen = ({ onNavigateToSpaces }: HomeScreenProps) => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="relative">
-        {/* Hero Image */}
-        <div className="h-56 relative overflow-hidden">
-          <img
-            src={coworkingMain}
-            alt="Coworking space"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
-        </div>
-        
-        {/* Header Content */}
-        <div className="absolute top-0 left-0 right-0 safe-top">
+        {/* Top Bar with Logo */}
+        <div className="bg-charcoal pt-4 pb-8 safe-top">
           <div className="flex items-center justify-between px-5 pt-4">
-            <div>
-              <p className="text-sm text-foreground/70">Good morning,</p>
-              <h1 className="text-2xl font-bold text-foreground">Alex 👋</h1>
+            <div className="flex items-center gap-3">
+              <img
+                src={logo}
+                alt="Backspace"
+                className="w-12 h-12 rounded-xl object-cover"
+              />
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Backspace</h1>
+                <p className="text-xs text-muted-foreground">We Create Community</p>
+              </div>
             </div>
-            <button className="p-3 rounded-full glass tap-highlight">
+            <button className="p-3 rounded-full bg-background/10 tap-highlight">
               <Bell className="w-5 h-5 text-foreground" />
             </button>
+          </div>
+          
+          {/* Welcome Message */}
+          <div className="px-5 mt-6">
+            <p className="text-sm text-foreground/70">Good morning,</p>
+            <h2 className="text-2xl font-bold text-foreground mt-1">Welcome back! 👋</h2>
           </div>
         </div>
         
         {/* Search Bar */}
         <div className="absolute -bottom-6 left-5 right-5">
-          <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl glass border border-border/50">
+          <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-card border border-border shadow-lg">
             <Search className="w-5 h-5 text-muted-foreground" />
             <input
               type="text"
