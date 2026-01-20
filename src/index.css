@@ -3,29 +3,30 @@
 @tailwind utilities;
 
 /* Backspace - Coworking Space App Design System */
+/* Color palette based on Backspace logo: Yellow #F5C518, Charcoal #3D3D3D */
 
 @layer base {
   :root {
-    --background: 20 14% 4%;
-    --foreground: 36 33% 95%;
+    --background: 0 0% 7%;
+    --foreground: 45 10% 95%;
 
-    --card: 20 14% 7%;
-    --card-foreground: 36 33% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 45 10% 95%;
 
-    --popover: 20 14% 7%;
-    --popover-foreground: 36 33% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 45 10% 95%;
 
-    --primary: 38 92% 50%;
-    --primary-foreground: 20 14% 4%;
+    --primary: 48 93% 53%;
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 20 14% 12%;
-    --secondary-foreground: 36 33% 85%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 45 10% 85%;
 
-    --muted: 20 10% 15%;
-    --muted-foreground: 36 10% 55%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 45 5% 55%;
 
-    --accent: 38 92% 50%;
-    --accent-foreground: 20 14% 4%;
+    --accent: 48 93% 53%;
+    --accent-foreground: 0 0% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -33,36 +34,38 @@
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    --border: 20 14% 15%;
-    --input: 20 14% 15%;
-    --ring: 38 92% 50%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 48 93% 53%;
 
     --radius: 1rem;
 
     /* Custom Backspace tokens */
-    --amber-glow: 38 92% 50%;
-    --amber-soft: 38 70% 40%;
-    --surface-elevated: 20 14% 10%;
-    --surface-glass: 20 14% 8%;
+    --yellow-primary: 48 93% 53%;
+    --yellow-soft: 48 80% 45%;
+    --charcoal: 0 0% 24%;
+    --charcoal-dark: 0 0% 15%;
+    --surface-elevated: 0 0% 12%;
+    --surface-glass: 0 0% 10%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(38, 92%, 50%), hsl(28, 90%, 45%));
-    --gradient-card: linear-gradient(180deg, hsl(20, 14%, 10%), hsl(20, 14%, 7%));
-    --gradient-glow: radial-gradient(ellipse at top, hsl(38, 92%, 50%, 0.15), transparent 60%);
+    --gradient-primary: linear-gradient(135deg, hsl(48, 93%, 53%), hsl(38, 90%, 48%));
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 12%), hsl(0, 0%, 8%));
+    --gradient-glow: radial-gradient(ellipse at top, hsl(48, 93%, 53%, 0.15), transparent 60%);
     
     /* Shadows */
-    --shadow-card: 0 4px 24px -4px hsl(0, 0%, 0%, 0.4);
-    --shadow-glow: 0 0 40px -10px hsl(38, 92%, 50%, 0.3);
-    --shadow-button: 0 4px 16px -4px hsl(38, 92%, 50%, 0.4);
+    --shadow-card: 0 4px 24px -4px hsl(0, 0%, 0%, 0.5);
+    --shadow-glow: 0 0 40px -10px hsl(48, 93%, 53%, 0.4);
+    --shadow-button: 0 4px 16px -4px hsl(48, 93%, 53%, 0.5);
 
-    --sidebar-background: 20 14% 4%;
-    --sidebar-foreground: 36 33% 95%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 20 14% 4%;
-    --sidebar-accent: 20 14% 12%;
-    --sidebar-accent-foreground: 36 33% 95%;
-    --sidebar-border: 20 14% 15%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 45 10% 95%;
+    --sidebar-primary: 48 93% 53%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 45 10% 95%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 48 93% 53%;
   }
 }
 
@@ -89,7 +92,7 @@
 @layer components {
   /* Glass morphism effect */
   .glass {
-    background-color: hsla(20, 14%, 8%, 0.8);
+    background-color: hsla(0, 0%, 10%, 0.85);
     @apply backdrop-blur-xl border border-border/50;
   }
   
@@ -139,5 +142,9 @@
   
   .bg-gradient-glow {
     background-image: var(--gradient-glow);
+  }
+  
+  .bg-charcoal {
+    background-color: hsl(var(--charcoal));
   }
 }

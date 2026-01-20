@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 const spaceTypes = ["All", "Meeting Room", "Focus Pod", "Open Space", "Phone Booth"];
 
-const spacesData = [
+export const spacesData = [
   {
     id: "1",
     name: "Meeting Room Alpha",
@@ -22,6 +22,9 @@ const spacesData = [
     amenities: ["Wifi", "Monitor", "Coffee"],
     available: true,
     price: "$25/hr",
+    description: "A modern meeting room perfect for team collaborations and client presentations. Features state-of-the-art AV equipment and comfortable seating.",
+    features: ["Video conferencing setup", "Whiteboard", "High-speed WiFi", "Coffee machine", "Natural lighting", "Ergonomic chairs"],
+    openHours: "7:00 AM - 11:00 PM",
   },
   {
     id: "2",
@@ -33,6 +36,9 @@ const spacesData = [
     amenities: ["Wifi", "Monitor"],
     available: true,
     price: "$12/hr",
+    description: "A private, soundproof pod designed for deep work and concentration. Perfect for calls, coding, or focused reading.",
+    features: ["Soundproofing", "Adjustable lighting", "Ergonomic chair", "Monitor stand", "USB charging", "Climate control"],
+    openHours: "24/7 Access",
   },
   {
     id: "3",
@@ -44,6 +50,9 @@ const spacesData = [
     amenities: ["Wifi", "Coffee"],
     available: false,
     price: "$8/hr",
+    description: "An open collaborative space perfect for workshops, team activities, or casual working. Flexible seating arrangements available.",
+    features: ["Flexible layout", "Multiple power outlets", "Bean bags", "Standing desks", "Coffee bar access", "Collaborative tools"],
+    openHours: "8:00 AM - 10:00 PM",
   },
   {
     id: "4",
@@ -55,10 +64,17 @@ const spacesData = [
     amenities: ["Wifi"],
     available: true,
     price: "$5/hr",
+    description: "A compact phone booth for quick calls, video meetings, or private conversations. Fully soundproofed for confidentiality.",
+    features: ["Full soundproofing", "Video call lighting", "Mirror", "Coat hook", "Ventilation", "Power outlet"],
+    openHours: "24/7 Access",
   },
 ];
 
-export const SpacesScreen = () => {
+interface SpacesScreenProps {
+  onSelectSpace?: (space: typeof spacesData[0]) => void;
+}
+
+export const SpacesScreen = ({ onSelectSpace }: SpacesScreenProps) => {
   const [activeType, setActiveType] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpace, setSelectedSpace] = useState<typeof spacesData[0] | null>(null);
@@ -69,6 +85,13 @@ export const SpacesScreen = () => {
     const matchesSearch = space.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
+
+  const handleSpaceClick = (id: string) => {
+    const space = spacesData.find((s) => s.id === id);
+    if (space && onSelectSpace) {
+      onSelectSpace(space);
+    }
+  };
 
   const handleBook = (id: string) => {
     const space = spacesData.find((s) => s.id === id);
@@ -145,8 +168,10 @@ export const SpacesScreen = () => {
             <div
               key={space.id}
               style={{ animationDelay: `${index * 100}ms` }}
+              onClick={() => handleSpaceClick(space.id)}
+              className="cursor-pointer"
             >
-              <SpaceCard {...space} onBook={handleBook} />
+              <SpaceCard {...space} onBook={() => handleBook(space.id)} />
             </div>
           ))}
         </div>
