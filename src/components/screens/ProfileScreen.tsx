@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { 
   Settings, 
   CreditCard, 
@@ -8,13 +9,15 @@ import {
   ChevronRight,
   Calendar,
   Clock,
-  Star
+  Star,
+  Pencil
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
 const menuItems = [
   { icon: CreditCard, label: "Membership & Billing", description: "Pro Plan" },
   { icon: Calendar, label: "My Bookings", description: "3 upcoming" },
@@ -32,8 +35,10 @@ const stats = [
 
 export const ProfileScreen = () => {
   const { user, signOut } = useAuth();
+  const { profile, refetch: refetchProfile } = useProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -43,6 +48,9 @@ export const ProfileScreen = () => {
     });
     navigate("/auth");
   };
+
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const avatarUrl = profile?.avatar_url || "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=200&h=200&fit=crop&crop=face";
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -58,7 +66,7 @@ export const ProfileScreen = () => {
               <div className="relative">
                 <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-primary/20">
                   <img
-                    src="https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=200&h=200&fit=crop&crop=face"
+                    src={avatarUrl}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
@@ -68,13 +76,21 @@ export const ProfileScreen = () => {
               
               {/* Info */}
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-foreground">
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-foreground">
+                    {displayName}
+                  </h2>
+                  <button 
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/20 text-primary">
-                    Member
+                    {profile?.membership_type || 'Member'}
                   </span>
                 </div>
               </div>
@@ -132,6 +148,18 @@ export const ProfileScreen = () => {
       <p className="text-center text-xs text-muted-foreground mt-6">
         Backspace v1.0.0
       </p>
+
+      {/* Edit Profile Modal */}
+      {user && (
+        <EditProfileModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          userId={user.id}
+          currentName={displayName}
+          currentAvatarUrl={profile?.avatar_url || null}
+          onProfileUpdated={refetchProfile}
+        />
+      )}
     </div>
   );
 };
