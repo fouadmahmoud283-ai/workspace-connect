@@ -11,6 +11,9 @@ import {
   Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   { icon: CreditCard, label: "Membership & Billing", description: "Pro Plan" },
@@ -28,6 +31,18 @@ const stats = [
 ];
 
 export const ProfileScreen = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+    navigate("/auth");
+  };
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -53,11 +68,13 @@ export const ProfileScreen = () => {
               
               {/* Info */}
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-foreground">Alex Thompson</h2>
-                <p className="text-sm text-muted-foreground">Product Designer</p>
+                <h2 className="text-xl font-bold text-foreground">
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                </h2>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/20 text-primary">
-                    Pro Member
+                    Member
                   </span>
                 </div>
               </div>
@@ -102,7 +119,10 @@ export const ProfileScreen = () => {
       
       {/* Logout */}
       <div className="px-5 mt-6">
-        <button className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-destructive/10 text-destructive font-medium tap-highlight hover:bg-destructive/20 transition-colors">
+        <button 
+          onClick={handleSignOut}
+          className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-destructive/10 text-destructive font-medium tap-highlight hover:bg-destructive/20 transition-colors"
+        >
           <LogOut className="w-5 h-5" />
           <span>Sign Out</span>
         </button>

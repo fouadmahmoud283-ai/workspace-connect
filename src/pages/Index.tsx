@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { HomeScreen } from "@/components/screens/HomeScreen";
 import { SpacesScreen, spacesData } from "@/components/screens/SpacesScreen";
@@ -18,8 +20,28 @@ type Screen =
   | { type: "profile" };
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>({ type: "home" });
   const [activeTab, setActiveTab] = useState("home");
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
