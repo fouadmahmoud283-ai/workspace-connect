@@ -27,11 +27,24 @@ export const useProfile = () => {
     }
 
     try {
-      const { data, error } = await (supabase as any)
+      // First try to fetch profile
+      let { data, error } = await (supabase as any)
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      // If no profile exists, create one (for existing users before trigger was added)
+      if (!data && !error) {
+        const { data: newProfile, error: insertError } = await (supabase as any)
+          .from("profiles")
+          .insert({ user_id: user.id, full_name: user.user_metadata?.full_name || null })
+          .select()
+          .single();
+        
+        if (insertError) throw insertError;
+        data = newProfile;
+      }
 
       if (error) throw error;
       setProfile(data);
