@@ -1,0 +1,9 @@
+{
+  "appId": "app.lovable.de469915af164369afe198cff2fa6f3b",
+  "appName": "Backspace",
+  "webDir": "dist",
+  "server": {
+    "url": "https://de469915-af16-4369-afe1-98cff2fa6f3b.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  }
+}

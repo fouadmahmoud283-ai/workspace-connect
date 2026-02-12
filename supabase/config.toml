@@ -1,0 +1,4 @@
+project_id = "gvkloywszwvkbxrhlffa"
+
+[functions.fawrypay]
+verify_jwt = false
