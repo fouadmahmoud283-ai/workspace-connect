@@ -152,8 +152,8 @@ export const ProfileScreen = ({ onMenuItemClick }: ProfileScreenProps) => {
             <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
               {stats.map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                    <p className="text-lg font-bold text-foreground truncate">{stat.value}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1 truncate">{stat.label}</p>
                 </div>
               ))}
             </div>
