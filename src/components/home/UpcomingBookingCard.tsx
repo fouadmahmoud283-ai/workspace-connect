@@ -49,37 +49,37 @@ export const UpcomingBookingCard = ({ booking, onCancel }: UpcomingBookingCardPr
           </button>
         </div>
         
-        <div className="grid grid-cols-3 gap-4 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-secondary/50">
-              <Calendar className="w-4 h-4 text-primary" />
+        <div className="flex flex-wrap gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-secondary/50 flex-shrink-0">
+                <Calendar className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Date</p>
+                <p className="text-sm font-medium text-foreground">{booking.date}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Date</p>
-              <p className="text-sm font-medium text-foreground">{booking.date}</p>
+            
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-secondary/50 flex-shrink-0">
+                <Clock className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Time</p>
+                <p className="text-sm font-medium text-foreground">{booking.time}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-secondary/50 flex-shrink-0">
+                <MapPin className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Floor</p>
+                <p className="text-sm font-medium text-foreground">{booking.location}</p>
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-secondary/50">
-              <Clock className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Time</p>
-              <p className="text-sm font-medium text-foreground">{booking.time}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-secondary/50">
-              <MapPin className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Floor</p>
-              <p className="text-sm font-medium text-foreground">{booking.location}</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
