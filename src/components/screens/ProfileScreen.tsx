@@ -127,11 +127,11 @@ export const ProfileScreen = ({ onMenuItemClick }: ProfileScreenProps) => {
               </div>
               
               {/* Info */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-foreground">
-                    {displayName}
-                  </h2>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-foreground truncate">
+                      {displayName}
+                    </h2>
                   <button 
                     onClick={() => setIsEditModalOpen(true)}
                     className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
