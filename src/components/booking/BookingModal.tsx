@@ -158,7 +158,7 @@ export const BookingModal = ({ space, isOpen, onClose, onConfirm }: BookingModal
                <Clock className="w-5 h-5 text-primary" />
                <h3 className="font-medium text-foreground">Select Time</h3>
              </div>
-             <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                  {timeSlots.map((time) => {
                  const isSelected = time === selectedTime;
                  const isBooked = isTimeSlotBooked(time);
