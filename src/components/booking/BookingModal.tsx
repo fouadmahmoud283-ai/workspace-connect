@@ -190,8 +190,8 @@ export const BookingModal = ({ space, isOpen, onClose, onConfirm }: BookingModal
               <Users className="w-5 h-5 text-primary" />
               <h3 className="font-medium text-foreground">Duration</h3>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {durations.map((duration) => {
+              <div className="grid grid-cols-2 gap-2">
+                {durations.map((duration) => {
                 const isSelected = duration.value === selectedDuration;
                 return (
                   <button
