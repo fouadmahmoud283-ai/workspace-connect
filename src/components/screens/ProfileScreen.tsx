@@ -139,7 +139,7 @@ export const ProfileScreen = ({ onMenuItemClick }: ProfileScreenProps) => {
                     <Pencil className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/20 text-primary">
                     {profile?.membership_type ? `${profile.membership_type.charAt(0).toUpperCase() + profile.membership_type.slice(1)}` : 'Basic'}
