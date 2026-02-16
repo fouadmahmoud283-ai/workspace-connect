@@ -106,7 +106,13 @@ const Index = () => {
   const renderScreen = () => {
     switch (screen.type) {
       case "home":
-        return <HomeScreen onNavigateToSpaces={() => handleTabChange("spaces")} />;
+        return (
+          <HomeScreen
+            onNavigateToSpaces={() => handleTabChange("spaces")}
+            onNavigateToBookings={() => setScreen({ type: "bookings" })}
+            onNavigateToNotifications={() => setScreen({ type: "notifications" })}
+          />
+        );
       
       case "spaces":
         return (
@@ -129,6 +135,7 @@ const Index = () => {
             onSelectActivity={(activity) => setScreen({ type: "activity-detail", activity })}
             onSelectExpert={(expert) => setScreen({ type: "expert-detail", expert })}
             onOpenMessages={() => setScreen({ type: "chat-list" })}
+            onOpenChat={(conv) => setScreen({ type: "chat", conversation: conv })}
           />
         );
       
@@ -195,7 +202,13 @@ const Index = () => {
         );
       
       default:
-        return <HomeScreen onNavigateToSpaces={() => handleTabChange("spaces")} />;
+        return (
+          <HomeScreen
+            onNavigateToSpaces={() => handleTabChange("spaces")}
+            onNavigateToBookings={() => setScreen({ type: "bookings" })}
+            onNavigateToNotifications={() => setScreen({ type: "notifications" })}
+          />
+        );
     }
   };
 

@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Users, GraduationCap, Award, MessageCircle } from "lucide-react";
 import { MemberCard } from "@/components/community/MemberCard";
 import { StudentActivityCard } from "@/components/community/StudentActivityCard";
 import { ExpertCard } from "@/components/community/ExpertCard";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useMessages, Conversation } from "@/hooks/useMessages";
 import { toast } from "sonner";
 
 const tabs = [
@@ -144,21 +147,46 @@ export const expertsData = [
   },
 ];
 
+interface CommunityMember {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 interface CommunityScreenProps {
   onSelectActivity?: (activity: typeof studentActivitiesData[0]) => void;
   onSelectExpert?: (expert: typeof expertsData[0]) => void;
   onOpenMessages?: () => void;
+  onOpenChat?: (conversation: Conversation) => void;
 }
 
-export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessages }: CommunityScreenProps) => {
+export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessages, onOpenChat }: CommunityScreenProps) => {
+  const { user } = useAuth();
+  const { createDirectConversation } = useMessages();
   const [activeTab, setActiveTab] = useState("members");
   const [searchQuery, setSearchQuery] = useState("");
+  const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
 
-  const onlineCount = membersData.filter((m) => m.isOnline).length;
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .neq("user_id", user?.id || "");
+      setMembers(data || []);
+      setLoadingMembers(false);
+    };
+    fetchMembers();
+  }, [user]);
 
-  const handleConnect = (id: string) => {
-    const member = membersData.find((m) => m.id === id);
-    toast.success(`Connection request sent to ${member?.name}!`);
+  const handleMessage = async (userId: string) => {
+    const { data, error } = await createDirectConversation(userId);
+    if (error) {
+      toast.error("Failed to start conversation");
+    } else if (data && onOpenChat) {
+      onOpenChat(data as Conversation);
+    }
   };
 
   const handleActivityClick = (id: string) => {
@@ -175,9 +203,8 @@ export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessag
     }
   };
 
-  const filteredMembers = membersData.filter((member) =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMembers = members.filter((m) =>
+    (m.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredActivities = studentActivitiesData.filter((activity) =>
@@ -198,20 +225,17 @@ export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessag
           <div>
             <h1 className="text-2xl font-bold text-foreground">Community</h1>
             <p className="text-muted-foreground mt-1">
-              <span className="text-success font-medium">{onlineCount} online</span> · Connect & grow
+              <span className="text-success font-medium">{members.length} members</span> · Connect & grow
             </p>
           </div>
           {onOpenMessages && (
-            <button
-              onClick={onOpenMessages}
-              className="p-3 rounded-full bg-primary/10 tap-highlight"
-            >
+            <button onClick={onOpenMessages} className="p-3 rounded-full bg-primary/10 tap-highlight">
               <MessageCircle className="w-5 h-5 text-primary" />
             </button>
           )}
         </div>
       </div>
-      
+
       {/* Search */}
       <div className="px-5 mb-4">
         <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-card border border-border">
@@ -225,47 +249,61 @@ export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessag
           />
         </div>
       </div>
-      
+
       {/* Tabs */}
       <div className="px-5 mb-6">
         <div className="flex gap-2 p-1 rounded-xl bg-card border border-border">
           {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 tap-highlight",
-                  activeTab === tab.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <tab.icon className="w-3.5 h-3.5" />
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 tap-highlight",
+                activeTab === tab.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <tab.icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
             </button>
           ))}
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="px-5">
-        {/* Members Tab */}
         {activeTab === "members" && (
           <div className="space-y-3">
-            {filteredMembers.map((member, index) => (
-              <div key={member.id} style={{ animationDelay: `${index * 100}ms` }}>
-                <MemberCard {...member} onConnect={handleConnect} />
+            {loadingMembers ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
-            ))}
+            ) : filteredMembers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-muted-foreground">No members found</p>
+              </div>
+            ) : (
+              filteredMembers.map((member) => (
+                <MemberCard
+                  key={member.user_id}
+                  id={member.user_id}
+                  name={member.full_name || "Unknown"}
+                  role=""
+                  company=""
+                  avatar={member.avatar_url || ""}
+                  skills={[]}
+                  isOnline={false}
+                  onConnect={() => handleMessage(member.user_id)}
+                />
+              ))
+            )}
           </div>
         )}
-        
-        {/* Activities Tab */}
+
         {activeTab === "activities" && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">
-              Student activities partnered with Backspace
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">Student activities partnered with Backspace</p>
             {filteredActivities.map((activity, index) => (
               <div key={activity.id} style={{ animationDelay: `${index * 100}ms` }}>
                 <StudentActivityCard {...activity} onClick={handleActivityClick} />
@@ -273,13 +311,10 @@ export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessag
             ))}
           </div>
         )}
-        
-        {/* Experts Tab */}
+
         {activeTab === "experts" && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">
-              Book sessions with industry experts
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">Book sessions with industry experts</p>
             {filteredExperts.map((expert, index) => (
               <div key={expert.id} style={{ animationDelay: `${index * 100}ms` }}>
                 <ExpertCard {...expert} onClick={handleExpertClick} />
@@ -287,10 +322,8 @@ export const CommunityScreen = ({ onSelectActivity, onSelectExpert, onOpenMessag
             ))}
           </div>
         )}
-        
-        {/* Empty State */}
-        {((activeTab === "members" && filteredMembers.length === 0) ||
-          (activeTab === "activities" && filteredActivities.length === 0) ||
+
+        {((activeTab === "activities" && filteredActivities.length === 0) ||
           (activeTab === "experts" && filteredExperts.length === 0)) && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-muted-foreground">No results found</p>
