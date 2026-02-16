@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { HomeScreen } from "@/components/screens/HomeScreen";
 import { SpacesScreen, spacesData } from "@/components/screens/SpacesScreen";
