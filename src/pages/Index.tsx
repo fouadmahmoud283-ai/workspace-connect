@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/navigation/BottomNav";
 import { HomeScreen } from "@/components/screens/HomeScreen";
 import { SpacesScreen, spacesData } from "@/components/screens/SpacesScreen";
 import { SpaceDetailScreen } from "@/components/screens/SpaceDetailScreen";
-import { CommunityScreen, studentActivitiesData, expertsData } from "@/components/screens/CommunityScreen";
+import { CommunityScreen } from "@/components/screens/CommunityScreen";
 import { StudentActivityDetailScreen } from "@/components/screens/StudentActivityDetailScreen";
 import { ExpertDetailScreen } from "@/components/screens/ExpertDetailScreen";
 import { ProfileScreen } from "@/components/screens/ProfileScreen";
@@ -26,8 +26,8 @@ type Screen =
   | { type: "spaces" }
   | { type: "space-detail"; space: typeof spacesData[0] }
   | { type: "community" }
-  | { type: "activity-detail"; activity: typeof studentActivitiesData[0] }
-  | { type: "expert-detail"; expert: typeof expertsData[0] }
+  | { type: "activity-detail"; activity: any }
+  | { type: "expert-detail"; expert: any }
   | { type: "profile" }
   | { type: "membership" }
   | { type: "bookings" }
