@@ -115,6 +115,54 @@ export type Database = {
         }
         Relationships: []
       }
+      experts: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          email: string | null
+          expertise: string[]
+          hourly_rate: string | null
+          id: string
+          is_available: boolean
+          linkedin: string | null
+          name: string
+          rating: number
+          sessions: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          email?: string | null
+          expertise?: string[]
+          hourly_rate?: string | null
+          id?: string
+          is_available?: boolean
+          linkedin?: string | null
+          name: string
+          rating?: number
+          sessions?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          email?: string | null
+          expertise?: string[]
+          hourly_rate?: string | null
+          id?: string
+          is_available?: boolean
+          linkedin?: string | null
+          name?: string
+          rating?: number
+          sessions?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       membership_plans: {
         Row: {
           created_at: string
@@ -332,6 +380,54 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      student_activities: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          email: string | null
+          founded: string | null
+          id: string
+          instagram: string | null
+          logo: string | null
+          long_description: string | null
+          members: number
+          name: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          email?: string | null
+          founded?: string | null
+          id?: string
+          instagram?: string | null
+          logo?: string | null
+          long_description?: string | null
+          members?: number
+          name: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          email?: string | null
+          founded?: string | null
+          id?: string
+          instagram?: string | null
+          logo?: string | null
+          long_description?: string | null
+          members?: number
+          name?: string
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

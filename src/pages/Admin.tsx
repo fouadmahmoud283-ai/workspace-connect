@@ -398,49 +398,306 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
 }
 
 function CommunityAdmin() {
+  const [subTab, setSubTab] = useState<"activities" | "experts" | "conversations">("activities");
+  const [activities, setActivities] = useState<any[]>([]);
+  const [experts, setExperts] = useState<any[]>([]);
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingActivity, setEditingActivity] = useState<any | null>(null);
+  const [editingExpert, setEditingExpert] = useState<any | null>(null);
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  const [showExpertForm, setShowExpertForm] = useState(false);
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase.from("conversations").select("*").order("updated_at", { ascending: false });
-      setConversations(data || []);
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+  const fetchAll = async () => {
+    setLoading(true);
+    const [a, e, c] = await Promise.all([
+      supabase.from("student_activities").select("*").order("created_at", { ascending: false }),
+      supabase.from("experts").select("*").order("created_at", { ascending: false }),
+      supabase.from("conversations").select("*").order("updated_at", { ascending: false }),
+    ]);
+    setActivities(a.data || []);
+    setExperts(e.data || []);
+    setConversations(c.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const handleDeleteActivity = async (id: string) => {
+    await supabase.from("student_activities").delete().eq("id", id);
+    setActivities(prev => prev.filter(a => a.id !== id));
+    toast.success("Activity deleted");
+  };
+
+  const handleDeleteExpert = async (id: string) => {
+    await supabase.from("experts").delete().eq("id", id);
+    setExperts(prev => prev.filter(e => e.id !== id));
+    toast.success("Expert deleted");
+  };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total Conversations" value={conversations.length} />
-        <StatCard label="Direct Messages" value={conversations.filter(c => c.type === "direct").length} />
-        <StatCard label="Group Chats" value={conversations.filter(c => c.type === "group").length} accent />
+      {/* Sub tabs */}
+      <div className="flex gap-2 p-1 rounded-xl bg-card border border-border w-fit">
+        {(["activities", "experts", "conversations"] as const).map(t => (
+          <button key={t} onClick={() => setSubTab(t)} className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize",
+            subTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          )}>{t}</button>
+        ))}
       </div>
 
-      <div className="rounded-2xl bg-card border border-border p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4">All Conversations</h3>
-        <div className="space-y-3">
-          {conversations.map((c) => (
-            <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-              <div>
-                <p className="text-sm font-medium text-foreground">{c.name || (c.type === "direct" ? "Direct Message" : "Group Chat")}</p>
-                <p className="text-xs text-muted-foreground">{c.type} · {format(parseISO(c.updated_at), "MMM d, HH:mm")}</p>
+      {/* Activities */}
+      {subTab === "activities" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-foreground">Student Activities ({activities.length})</h3>
+            <button onClick={() => { setEditingActivity(null); setShowActivityForm(true); }} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight">
+              + Add Activity
+            </button>
+          </div>
+
+          {showActivityForm && (
+            <ActivityForm
+              initial={editingActivity}
+              onSave={async (data) => {
+                if (editingActivity) {
+                  await supabase.from("student_activities").update(data).eq("id", editingActivity.id);
+                  toast.success("Activity updated");
+                } else {
+                  await supabase.from("student_activities").insert(data);
+                  toast.success("Activity created");
+                }
+                setShowActivityForm(false);
+                setEditingActivity(null);
+                fetchAll();
+              }}
+              onCancel={() => { setShowActivityForm(false); setEditingActivity(null); }}
+            />
+          )}
+
+          {activities.map(a => (
+            <div key={a.id} className="rounded-2xl bg-card border border-border p-4">
+              <div className="flex items-center gap-4">
+                {a.logo && <img src={a.logo} alt="" className="w-12 h-12 rounded-xl object-cover" />}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-foreground">{a.name}</h4>
+                  <p className="text-xs text-muted-foreground">{a.category} · {a.members} members · Founded {a.founded}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => { setEditingActivity(a); setShowActivityForm(true); }} className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Edit">
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  <button onClick={() => handleDeleteActivity(a.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" title="Delete">
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
+                </div>
               </div>
-              <span className="text-[10px] px-2 py-1 rounded-full bg-secondary text-secondary-foreground font-medium">{c.type}</span>
             </div>
           ))}
-          {conversations.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No conversations yet</p>}
+        </div>
+      )}
+
+      {/* Experts */}
+      {subTab === "experts" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-foreground">Experts ({experts.length})</h3>
+            <button onClick={() => { setEditingExpert(null); setShowExpertForm(true); }} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight">
+              + Add Expert
+            </button>
+          </div>
+
+          {showExpertForm && (
+            <ExpertForm
+              initial={editingExpert}
+              onSave={async (data) => {
+                if (editingExpert) {
+                  await supabase.from("experts").update(data).eq("id", editingExpert.id);
+                  toast.success("Expert updated");
+                } else {
+                  await supabase.from("experts").insert(data);
+                  toast.success("Expert created");
+                }
+                setShowExpertForm(false);
+                setEditingExpert(null);
+                fetchAll();
+              }}
+              onCancel={() => { setShowExpertForm(false); setEditingExpert(null); }}
+            />
+          )}
+
+          {experts.map(e => (
+            <div key={e.id} className="rounded-2xl bg-card border border-border p-4">
+              <div className="flex items-center gap-4">
+                {e.avatar && <img src={e.avatar} alt="" className="w-12 h-12 rounded-full object-cover" />}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-foreground">{e.name}</h4>
+                  <p className="text-xs text-muted-foreground">{e.title} · {e.hourly_rate} · {e.sessions} sessions</p>
+                  <div className="flex gap-1 mt-1">
+                    {(e.expertise || []).map((s: string) => (
+                      <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{s}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className={cn("text-[10px] px-2 py-1 rounded-full font-medium", e.is_available ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
+                    {e.is_available ? "Available" : "Unavailable"}
+                  </span>
+                  <button onClick={() => { setEditingExpert(e); setShowExpertForm(true); }} className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  <button onClick={() => handleDeleteExpert(e.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors">
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Conversations */}
+      {subTab === "conversations" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard label="Total Conversations" value={conversations.length} />
+            <StatCard label="Direct Messages" value={conversations.filter(c => c.type === "direct").length} />
+            <StatCard label="Group Chats" value={conversations.filter(c => c.type === "group").length} accent />
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-4">All Conversations</h3>
+            <div className="space-y-3">
+              {conversations.map(c => (
+                <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{c.name || (c.type === "direct" ? "Direct Message" : "Group Chat")}</p>
+                    <p className="text-xs text-muted-foreground">{c.type} · {format(parseISO(c.updated_at), "MMM d, HH:mm")}</p>
+                  </div>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-secondary text-secondary-foreground font-medium">{c.type}</span>
+                </div>
+              ))}
+              {conversations.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No conversations yet</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActivityForm({ initial, onSave, onCancel }: { initial: any | null; onSave: (data: any) => void; onCancel: () => void }) {
+  const [form, setForm] = useState({
+    name: initial?.name || "",
+    category: initial?.category || "",
+    members: initial?.members || 0,
+    description: initial?.description || "",
+    long_description: initial?.long_description || "",
+    logo: initial?.logo || "",
+    founded: initial?.founded || "",
+    website: initial?.website || "",
+    instagram: initial?.instagram || "",
+    email: initial?.email || "",
+  });
+
+  const update = (key: string, val: any) => setForm(prev => ({ ...prev, [key]: val }));
+
+  return (
+    <div className="rounded-2xl bg-card border border-primary/30 p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">{initial ? "Edit Activity" : "New Activity"}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label="Name" value={form.name} onChange={v => update("name", v)} />
+        <FormField label="Category" value={form.category} onChange={v => update("category", v)} />
+        <FormField label="Members" value={form.members} onChange={v => update("members", parseInt(v) || 0)} type="number" />
+        <FormField label="Founded" value={form.founded} onChange={v => update("founded", v)} />
+        <FormField label="Logo URL" value={form.logo} onChange={v => update("logo", v)} />
+        <FormField label="Website" value={form.website} onChange={v => update("website", v)} />
+        <FormField label="Instagram" value={form.instagram} onChange={v => update("instagram", v)} />
+        <FormField label="Email" value={form.email} onChange={v => update("email", v)} />
+      </div>
+      <FormField label="Description" value={form.description} onChange={v => update("description", v)} />
+      <FormField label="Long Description" value={form.long_description} onChange={v => update("long_description", v)} textarea />
+      <div className="flex gap-2 justify-end">
+        <button onClick={onCancel} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">Cancel</button>
+        <button onClick={() => onSave(form)} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight">
+          {initial ? "Update" : "Create"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExpertForm({ initial, onSave, onCancel }: { initial: any | null; onSave: (data: any) => void; onCancel: () => void }) {
+  const [form, setForm] = useState({
+    name: initial?.name || "",
+    title: initial?.title || "",
+    avatar: initial?.avatar || "",
+    expertise: (initial?.expertise || []).join(", "),
+    rating: initial?.rating || 0,
+    sessions: initial?.sessions || 0,
+    is_available: initial?.is_available ?? true,
+    hourly_rate: initial?.hourly_rate || "",
+    linkedin: initial?.linkedin || "",
+    email: initial?.email || "",
+  });
+
+  const update = (key: string, val: any) => setForm(prev => ({ ...prev, [key]: val }));
+
+  return (
+    <div className="rounded-2xl bg-card border border-primary/30 p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">{initial ? "Edit Expert" : "New Expert"}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label="Name" value={form.name} onChange={v => update("name", v)} />
+        <FormField label="Title" value={form.title} onChange={v => update("title", v)} />
+        <FormField label="Avatar URL" value={form.avatar} onChange={v => update("avatar", v)} />
+        <FormField label="Expertise (comma separated)" value={form.expertise} onChange={v => update("expertise", v)} />
+        <FormField label="Rating" value={form.rating} onChange={v => update("rating", parseFloat(v) || 0)} type="number" />
+        <FormField label="Sessions" value={form.sessions} onChange={v => update("sessions", parseInt(v) || 0)} type="number" />
+        <FormField label="Hourly Rate" value={form.hourly_rate} onChange={v => update("hourly_rate", v)} />
+        <FormField label="LinkedIn" value={form.linkedin} onChange={v => update("linkedin", v)} />
+        <FormField label="Email" value={form.email} onChange={v => update("email", v)} />
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Available</label>
+          <button
+            onClick={() => update("is_available", !form.is_available)}
+            className={cn("w-10 h-6 rounded-full transition-colors", form.is_available ? "bg-success" : "bg-muted")}
+          >
+            <div className={cn("w-4 h-4 rounded-full bg-foreground mx-1 transition-transform", form.is_available && "translate-x-4")} />
+          </button>
         </div>
       </div>
+      <div className="flex gap-2 justify-end">
+        <button onClick={onCancel} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">Cancel</button>
+        <button onClick={() => onSave({ ...form, expertise: form.expertise.split(",").map(s => s.trim()).filter(Boolean) })} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight">
+          {initial ? "Update" : "Create"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, value, onChange, type = "text", textarea }: { label: string; value: any; onChange: (v: string) => void; type?: string; textarea?: boolean }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      {textarea ? (
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none resize-none h-20"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none"
+        />
+      )}
     </div>
   );
 }
