@@ -41,6 +41,7 @@ type Screen =
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>({ type: "home" });
   const [activeTab, setActiveTab] = useState("home");
@@ -50,6 +51,12 @@ const Index = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!loading && !adminLoading && user && isAdmin) {
+      navigate("/admin");
+    }
+  }, [user, loading, adminLoading, isAdmin, navigate]);
 
   if (loading) {
     return (
