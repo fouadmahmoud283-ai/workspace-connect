@@ -5,14 +5,14 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   LayoutDashboard, CalendarDays, Users, MessageCircle, 
-  LogOut, Search, X, Check, Trash2, Eye, ChevronDown
+  LogOut, Search, X, Check, Trash2, Eye, ChevronDown, Building2, Edit2, Plus, Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
 
-type Tab = "overview" | "bookings" | "users" | "community";
+type Tab = "overview" | "bookings" | "users" | "workspaces" | "community";
 
 interface Booking {
   id: string;
@@ -38,9 +38,25 @@ interface Profile {
   created_at: string;
 }
 
+interface Space {
+  id: string;
+  name: string;
+  type: string;
+  capacity: number;
+  location: string;
+  image: string | null;
+  amenities: string[];
+  available: boolean;
+  price: string;
+  description: string | null;
+  features: string[];
+  open_hours: string;
+}
+
 const tabs = [
   { id: "overview" as Tab, label: "Overview", icon: LayoutDashboard },
   { id: "bookings" as Tab, label: "Bookings", icon: CalendarDays },
+  { id: "workspaces" as Tab, label: "Workspaces", icon: Building2 },
   { id: "users" as Tab, label: "Users", icon: Users },
   { id: "community" as Tab, label: "Community", icon: MessageCircle },
 ];
@@ -52,8 +68,10 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [spaces, setSpaces] = useState<Space[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingData, setLoadingData] = useState(true);
+  const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("all");
 
   const { loading: authLoading } = useAuth();
 
@@ -73,12 +91,14 @@ export default function Admin() {
     if (!isAdmin) return;
     const fetchData = async () => {
       setLoadingData(true);
-      const [bookingsRes, usersRes] = await Promise.all([
+      const [bookingsRes, usersRes, spacesRes] = await Promise.all([
         supabase.from("bookings").select("*").order("booking_date", { ascending: false }),
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+        supabase.from("spaces").select("*").order("created_at", { ascending: false }),
       ]);
       setBookings((bookingsRes.data as Booking[]) || []);
       setUsers((usersRes.data as Profile[]) || []);
+      setSpaces((spacesRes.data as Space[]) || []);
       setLoadingData(false);
     };
     fetchData();
@@ -99,10 +119,7 @@ export default function Admin() {
   const activeUsers = users.length;
 
   const handleCancelBooking = async (id: string) => {
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "cancelled" })
-      .eq("id", id);
+    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id);
     if (!error) {
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "cancelled" } : b));
       toast.success("Booking cancelled");
@@ -110,13 +127,18 @@ export default function Admin() {
   };
 
   const handleConfirmBooking = async (id: string) => {
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "confirmed" })
-      .eq("id", id);
+    const { error } = await supabase.from("bookings").update({ status: "confirmed" }).eq("id", id);
     if (!error) {
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "confirmed" } : b));
       toast.success("Booking confirmed");
+    }
+  };
+
+  const handleCompleteBooking = async (id: string) => {
+    const { error } = await supabase.from("bookings").update({ status: "completed" }).eq("id", id);
+    if (!error) {
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "completed" } : b));
+      toast.success("Booking marked as completed");
     }
   };
 
@@ -133,10 +155,12 @@ export default function Admin() {
     return u?.full_name || "Unknown User";
   };
 
-  const filteredBookings = bookings.filter(b =>
-    b.space_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    getUserName(b.user_id).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBookings = bookings.filter(b => {
+    const matchesSearch = b.space_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getUserName(b.user_id).toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = bookingStatusFilter === "all" || b.status === bookingStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const filteredUsers = users.filter(u =>
     (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -147,6 +171,13 @@ export default function Admin() {
     const [h] = time.split(":");
     const hour = parseInt(h);
     return `${hour > 12 ? hour - 12 : hour === 0 ? 12 : hour}:00 ${hour >= 12 ? "PM" : "AM"}`;
+  };
+
+  const bookingStatusCounts = {
+    all: bookings.length,
+    confirmed: bookings.filter(b => b.status === "confirmed").length,
+    cancelled: bookings.filter(b => b.status === "cancelled").length,
+    completed: bookings.filter(b => b.status === "completed").length,
   };
 
   return (
@@ -216,10 +247,11 @@ export default function Admin() {
                 {activeTab === "overview" && "Dashboard summary"}
                 {activeTab === "bookings" && `${bookings.length} total reservations`}
                 {activeTab === "users" && `${users.length} registered users`}
+                {activeTab === "workspaces" && `${spaces.length} workspaces`}
                 {activeTab === "community" && "Manage community content"}
               </p>
             </div>
-            {(activeTab === "bookings" || activeTab === "users") && (
+            {(activeTab === "bookings" || activeTab === "users" || activeTab === "workspaces") && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border w-64">
                 <Search className="w-4 h-4 text-muted-foreground" />
                 <input
@@ -249,9 +281,14 @@ export default function Admin() {
                     <StatCard label="Total Credits Used" value={totalRevenue} />
                     <StatCard label="Registered Users" value={activeUsers} />
                   </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard label="Total Workspaces" value={spaces.length} />
+                    <StatCard label="Available Spaces" value={spaces.filter(s => s.available).length} accent />
+                    <StatCard label="Cancelled Bookings" value={bookingStatusCounts.cancelled} />
+                    <StatCard label="Completed Bookings" value={bookingStatusCounts.completed} />
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Recent Bookings */}
                     <div className="rounded-2xl bg-card border border-border p-5">
                       <h3 className="text-sm font-semibold text-foreground mb-4">Recent Bookings</h3>
                       <div className="space-y-3">
@@ -261,19 +298,13 @@ export default function Admin() {
                               <p className="text-sm font-medium text-foreground">{b.space_name}</p>
                               <p className="text-xs text-muted-foreground">{getUserName(b.user_id)} · {format(parseISO(b.booking_date), "MMM d")}</p>
                             </div>
-                            <span className={cn(
-                              "text-[10px] px-2 py-1 rounded-full font-medium",
-                              b.status === "confirmed" ? "bg-success/10 text-success" :
-                              b.status === "cancelled" ? "bg-destructive/10 text-destructive" :
-                              "bg-muted text-muted-foreground"
-                            )}>{b.status}</span>
+                            <StatusBadge status={b.status} />
                           </div>
                         ))}
                         {bookings.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No bookings yet</p>}
                       </div>
                     </div>
 
-                    {/* Recent Users */}
                     <div className="rounded-2xl bg-card border border-border p-5">
                       <h3 className="text-sm font-semibold text-foreground mb-4">Recent Users</h3>
                       <div className="space-y-3">
@@ -301,7 +332,25 @@ export default function Admin() {
 
               {/* Bookings */}
               {activeTab === "bookings" && (
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {/* Status Filters */}
+                  <div className="flex gap-2 flex-wrap">
+                    {(["all", "confirmed", "cancelled", "completed"] as const).map(status => (
+                      <button
+                        key={status}
+                        onClick={() => setBookingStatusFilter(status)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-medium transition-all capitalize",
+                          bookingStatusFilter === status
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {status} ({bookingStatusCounts[status]})
+                      </button>
+                    ))}
+                  </div>
+
                   {filteredBookings.length === 0 ? (
                     <p className="text-center text-muted-foreground py-12">No bookings found</p>
                   ) : (
@@ -311,12 +360,7 @@ export default function Admin() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="text-sm font-semibold text-foreground">{b.space_name}</h3>
-                              <span className={cn(
-                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                b.status === "confirmed" ? "bg-success/10 text-success" :
-                                b.status === "cancelled" ? "bg-destructive/10 text-destructive" :
-                                "bg-muted text-muted-foreground"
-                              )}>{b.status}</span>
+                              <StatusBadge status={b.status} />
                             </div>
                             <p className="text-xs text-muted-foreground">
                               {getUserName(b.user_id)} · {format(parseISO(b.booking_date), "EEE, MMM d yyyy")} · {formatTime(b.start_time)} – {formatTime(b.end_time)}
@@ -324,15 +368,20 @@ export default function Admin() {
                             <p className="text-xs text-muted-foreground mt-1">{b.credits_used} credits{b.notes ? ` · ${b.notes}` : ""}</p>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            {b.status !== "confirmed" && (
+                            {b.status !== "confirmed" && b.status !== "completed" && (
                               <button onClick={() => handleConfirmBooking(b.id)} className="p-2 rounded-lg hover:bg-success/10 transition-colors" title="Confirm">
                                 <Check className="w-4 h-4 text-success" />
                               </button>
                             )}
                             {b.status === "confirmed" && (
-                              <button onClick={() => handleCancelBooking(b.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" title="Cancel">
-                                <X className="w-4 h-4 text-destructive" />
-                              </button>
+                              <>
+                                <button onClick={() => handleCompleteBooking(b.id)} className="p-2 rounded-lg hover:bg-primary/10 transition-colors" title="Complete">
+                                  <Check className="w-4 h-4 text-primary" />
+                                </button>
+                                <button onClick={() => handleCancelBooking(b.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" title="Cancel">
+                                  <X className="w-4 h-4 text-destructive" />
+                                </button>
+                              </>
                             )}
                             <button onClick={() => handleDeleteBooking(b.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" title="Delete">
                               <Trash2 className="w-4 h-4 text-destructive" />
@@ -376,6 +425,15 @@ export default function Admin() {
                 </div>
               )}
 
+              {/* Workspaces */}
+              {activeTab === "workspaces" && (
+                <WorkspacesAdmin
+                  spaces={spaces}
+                  setSpaces={setSpaces}
+                  searchQuery={searchQuery}
+                />
+              )}
+
               {/* Community */}
               {activeTab === "community" && (
                 <CommunityAdmin />
@@ -388,6 +446,18 @@ export default function Admin() {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className={cn(
+      "text-[10px] px-2 py-0.5 rounded-full font-medium",
+      status === "confirmed" ? "bg-success/10 text-success" :
+      status === "cancelled" ? "bg-destructive/10 text-destructive" :
+      status === "completed" ? "bg-primary/10 text-primary" :
+      "bg-muted text-muted-foreground"
+    )}>{status}</span>
+  );
+}
+
 function StatCard({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
     <div className="rounded-2xl bg-card border border-border p-5">
@@ -396,6 +466,217 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
     </div>
   );
 }
+
+// ============ WORKSPACES ADMIN ============
+
+interface WorkspacesAdminProps {
+  spaces: any[];
+  setSpaces: React.Dispatch<React.SetStateAction<any[]>>;
+  searchQuery: string;
+}
+
+function WorkspacesAdmin({ spaces, setSpaces, searchQuery }: WorkspacesAdminProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+
+  const filtered = spaces.filter(s =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("spaces").delete().eq("id", id);
+    if (!error) {
+      setSpaces(prev => prev.filter(s => s.id !== id));
+      toast.success("Workspace deleted");
+    } else {
+      toast.error("Failed to delete workspace");
+    }
+  };
+
+  const handleToggleAvailability = async (id: string, available: boolean) => {
+    const { error } = await supabase.from("spaces").update({ available: !available }).eq("id", id);
+    if (!error) {
+      setSpaces(prev => prev.map(s => s.id === id ? { ...s, available: !available } : s));
+      toast.success(`Workspace ${!available ? "enabled" : "disabled"}`);
+    }
+  };
+
+  const handleSave = async (data: any) => {
+    if (editing) {
+      const { error } = await supabase.from("spaces").update(data).eq("id", editing.id);
+      if (!error) {
+        setSpaces(prev => prev.map(s => s.id === editing.id ? { ...s, ...data } : s));
+        toast.success("Workspace updated");
+      } else {
+        toast.error("Failed to update workspace");
+      }
+    } else {
+      const { data: newSpace, error } = await supabase.from("spaces").insert(data).select().single();
+      if (!error && newSpace) {
+        setSpaces(prev => [newSpace, ...prev]);
+        toast.success("Workspace created");
+      } else {
+        toast.error("Failed to create workspace");
+      }
+    }
+    setShowForm(false);
+    setEditing(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-4 items-center">
+          <h3 className="text-sm font-semibold text-foreground">All Workspaces ({filtered.length})</h3>
+          <div className="flex gap-2">
+            <span className="text-[10px] px-2 py-1 rounded-full bg-success/10 text-success font-medium">
+              {spaces.filter(s => s.available).length} available
+            </span>
+            <span className="text-[10px] px-2 py-1 rounded-full bg-destructive/10 text-destructive font-medium">
+              {spaces.filter(s => !s.available).length} unavailable
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => { setEditing(null); setShowForm(true); }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight"
+        >
+          <Plus className="w-4 h-4" /> Add Workspace
+        </button>
+      </div>
+
+      {showForm && (
+        <SpaceForm
+          initial={editing}
+          onSave={handleSave}
+          onCancel={() => { setShowForm(false); setEditing(null); }}
+        />
+      )}
+
+      {filtered.map(s => (
+        <div key={s.id} className="rounded-2xl bg-card border border-border p-4">
+          <div className="flex items-start gap-4">
+            {s.image && <img src={s.image} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="text-sm font-semibold text-foreground">{s.name}</h4>
+                <span className={cn(
+                  "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                  s.available ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                )}>
+                  {s.available ? "Available" : "Unavailable"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">{s.type} · {s.location} · Capacity: {s.capacity} · {s.price}</p>
+              <div className="flex gap-1 mt-1.5 flex-wrap">
+                {(s.amenities || []).map((a: string) => (
+                  <span key={a} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{a}</span>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Hours: {s.open_hours}</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => handleToggleAvailability(s.id, s.available)}
+                className={cn("p-2 rounded-lg transition-colors", s.available ? "hover:bg-destructive/10" : "hover:bg-success/10")}
+                title={s.available ? "Disable" : "Enable"}
+              >
+                {s.available ? <X className="w-4 h-4 text-destructive" /> : <Check className="w-4 h-4 text-success" />}
+              </button>
+              <button onClick={() => { setEditing(s); setShowForm(true); }} className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Edit">
+                <Edit2 className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button onClick={() => handleDelete(s.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" title="Delete">
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {filtered.length === 0 && (
+        <p className="text-center text-muted-foreground py-12">No workspaces found</p>
+      )}
+    </div>
+  );
+}
+
+function SpaceForm({ initial, onSave, onCancel }: { initial: any | null; onSave: (data: any) => void; onCancel: () => void }) {
+  const [form, setForm] = useState({
+    name: initial?.name || "",
+    type: initial?.type || "Meeting Room",
+    capacity: initial?.capacity || 1,
+    location: initial?.location || "",
+    image: initial?.image || "",
+    amenities: (initial?.amenities || []).join(", "),
+    available: initial?.available ?? true,
+    price: initial?.price || "",
+    description: initial?.description || "",
+    features: (initial?.features || []).join(", "),
+    open_hours: initial?.open_hours || "8:00 AM - 10:00 PM",
+  });
+
+  const update = (key: string, val: any) => setForm(prev => ({ ...prev, [key]: val }));
+
+  const handleSubmit = () => {
+    onSave({
+      ...form,
+      amenities: form.amenities.split(",").map(s => s.trim()).filter(Boolean),
+      features: form.features.split(",").map(s => s.trim()).filter(Boolean),
+    });
+  };
+
+  return (
+    <div className="rounded-2xl bg-card border border-primary/30 p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">{initial ? "Edit Workspace" : "New Workspace"}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label="Name" value={form.name} onChange={v => update("name", v)} />
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Type</label>
+          <select
+            value={form.type}
+            onChange={e => update("type", e.target.value)}
+            className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none"
+          >
+            <option value="Meeting Room">Meeting Room</option>
+            <option value="Focus Pod">Focus Pod</option>
+            <option value="Open Space">Open Space</option>
+            <option value="Phone Booth">Phone Booth</option>
+            <option value="Event Space">Event Space</option>
+            <option value="Private Office">Private Office</option>
+          </select>
+        </div>
+        <FormField label="Capacity" value={form.capacity} onChange={v => update("capacity", parseInt(v) || 1)} type="number" />
+        <FormField label="Location" value={form.location} onChange={v => update("location", v)} />
+        <FormField label="Price" value={form.price} onChange={v => update("price", v)} placeholder="e.g. $25/hr" />
+        <FormField label="Open Hours" value={form.open_hours} onChange={v => update("open_hours", v)} />
+        <FormField label="Image URL" value={form.image} onChange={v => update("image", v)} />
+        <div className="flex items-center gap-2 self-end pb-1">
+          <label className="text-xs text-muted-foreground">Available</label>
+          <button
+            onClick={() => update("available", !form.available)}
+            className={cn("w-10 h-6 rounded-full transition-colors", form.available ? "bg-success" : "bg-muted")}
+          >
+            <div className={cn("w-4 h-4 rounded-full bg-foreground mx-1 transition-transform", form.available && "translate-x-4")} />
+          </button>
+        </div>
+      </div>
+      <FormField label="Amenities (comma separated)" value={form.amenities} onChange={v => update("amenities", v)} placeholder="Wifi, Monitor, Coffee" />
+      <FormField label="Features (comma separated)" value={form.features} onChange={v => update("features", v)} placeholder="Whiteboard, Video conferencing" />
+      <FormField label="Description" value={form.description} onChange={v => update("description", v)} textarea />
+      <div className="flex gap-2 justify-end">
+        <button onClick={onCancel} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">Cancel</button>
+        <button onClick={handleSubmit} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight">
+          {initial ? "Update" : "Create"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============ COMMUNITY ADMIN ============
 
 function CommunityAdmin() {
   const [subTab, setSubTab] = useState<"activities" | "experts" | "conversations">("activities");
@@ -441,7 +722,6 @@ function CommunityAdmin() {
 
   return (
     <div className="space-y-6">
-      {/* Sub tabs */}
       <div className="flex gap-2 p-1 rounded-xl bg-card border border-border w-fit">
         {(["activities", "experts", "conversations"] as const).map(t => (
           <button key={t} onClick={() => setSubTab(t)} className={cn(
@@ -451,7 +731,6 @@ function CommunityAdmin() {
         ))}
       </div>
 
-      {/* Activities */}
       {subTab === "activities" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -490,7 +769,7 @@ function CommunityAdmin() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => { setEditingActivity(a); setShowActivityForm(true); }} className="p-2 rounded-lg hover:bg-secondary transition-colors" title="Edit">
-                    <Eye className="w-4 h-4 text-muted-foreground" />
+                    <Edit2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                   <button onClick={() => handleDeleteActivity(a.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" title="Delete">
                     <Trash2 className="w-4 h-4 text-destructive" />
@@ -502,7 +781,6 @@ function CommunityAdmin() {
         </div>
       )}
 
-      {/* Experts */}
       {subTab === "experts" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -549,7 +827,7 @@ function CommunityAdmin() {
                     {e.is_available ? "Available" : "Unavailable"}
                   </span>
                   <button onClick={() => { setEditingExpert(e); setShowExpertForm(true); }} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-                    <Eye className="w-4 h-4 text-muted-foreground" />
+                    <Edit2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                   <button onClick={() => handleDeleteExpert(e.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors">
                     <Trash2 className="w-4 h-4 text-destructive" />
@@ -561,7 +839,6 @@ function CommunityAdmin() {
         </div>
       )}
 
-      {/* Conversations */}
       {subTab === "conversations" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -589,6 +866,8 @@ function CommunityAdmin() {
     </div>
   );
 }
+
+// ============ FORMS ============
 
 function ActivityForm({ initial, onSave, onCancel }: { initial: any | null; onSave: (data: any) => void; onCancel: () => void }) {
   const [form, setForm] = useState({
@@ -680,7 +959,7 @@ function ExpertForm({ initial, onSave, onCancel }: { initial: any | null; onSave
   );
 }
 
-function FormField({ label, value, onChange, type = "text", textarea }: { label: string; value: any; onChange: (v: string) => void; type?: string; textarea?: boolean }) {
+function FormField({ label, value, onChange, type = "text", textarea, placeholder }: { label: string; value: any; onChange: (v: string) => void; type?: string; textarea?: boolean; placeholder?: string }) {
   return (
     <div className="space-y-1">
       <label className="text-xs text-muted-foreground">{label}</label>
@@ -688,6 +967,7 @@ function FormField({ label, value, onChange, type = "text", textarea }: { label:
         <textarea
           value={value}
           onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
           className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none resize-none h-20"
         />
       ) : (
@@ -695,6 +975,7 @@ function FormField({ label, value, onChange, type = "text", textarea }: { label:
           type={type}
           value={value}
           onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
           className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none"
         />
       )}

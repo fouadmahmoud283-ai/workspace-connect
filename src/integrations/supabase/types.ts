@@ -383,6 +383,57 @@ export type Database = {
         }
         Relationships: []
       }
+      spaces: {
+        Row: {
+          amenities: string[]
+          available: boolean
+          capacity: number
+          created_at: string
+          description: string | null
+          features: string[]
+          id: string
+          image: string | null
+          location: string
+          name: string
+          open_hours: string
+          price: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amenities?: string[]
+          available?: boolean
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          features?: string[]
+          id?: string
+          image?: string | null
+          location: string
+          name: string
+          open_hours?: string
+          price: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          amenities?: string[]
+          available?: boolean
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          features?: string[]
+          id?: string
+          image?: string | null
+          location?: string
+          name?: string
+          open_hours?: string
+          price?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_activities: {
         Row: {
           category: string

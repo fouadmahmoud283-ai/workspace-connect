@@ -1,102 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import { SpaceCard } from "@/components/spaces/SpaceCard";
 import { BookingModal } from "@/components/booking/BookingModal";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useBookings } from "@/hooks/useBookings";
+import { supabase } from "@/integrations/supabase/client";
+
+const spaceTypes = ["All", "Meeting Room", "Focus Pod", "Open Space", "Phone Booth"];
+
+// Keep for fallback/images
 import meetingRoom from "@/assets/spaces/meeting-room.jpg";
 import focusPod from "@/assets/spaces/focus-pod.jpg";
 import openSpace from "@/assets/spaces/open-space.jpg";
 import phoneBooth from "@/assets/spaces/phone-booth.jpg";
-import { toast } from "sonner";
-import { useBookings } from "@/hooks/useBookings";
 
-const spaceTypes = ["All", "Meeting Room", "Focus Pod", "Open Space", "Phone Booth"];
+const fallbackImages: Record<string, string> = {
+  "Meeting Room": meetingRoom,
+  "Focus Pod": focusPod,
+  "Open Space": openSpace,
+  "Phone Booth": phoneBooth,
+};
 
-export const spacesData = [
-  {
-    id: "1",
-    name: "Meeting Room Alpha",
-    type: "Meeting Room",
-    capacity: 8,
-    location: "Floor 3",
-    image: meetingRoom,
-    amenities: ["Wifi", "Monitor", "Coffee"],
-    available: true,
-    price: "$25/hr",
-    description: "A modern meeting room perfect for team collaborations and client presentations. Features state-of-the-art AV equipment and comfortable seating.",
-    features: ["Video conferencing setup", "Whiteboard", "High-speed WiFi", "Coffee machine", "Natural lighting", "Ergonomic chairs"],
-    openHours: "7:00 AM - 11:00 PM",
-  },
-  {
-    id: "2",
-    name: "Focus Pod #12",
-    type: "Focus Pod",
-    capacity: 1,
-    location: "Floor 2",
-    image: focusPod,
-    amenities: ["Wifi", "Monitor"],
-    available: true,
-    price: "$12/hr",
-    description: "A private, soundproof pod designed for deep work and concentration. Perfect for calls, coding, or focused reading.",
-    features: ["Soundproofing", "Adjustable lighting", "Ergonomic chair", "Monitor stand", "USB charging", "Climate control"],
-    openHours: "24/7 Access",
-  },
-  {
-    id: "3",
-    name: "Creative Hub",
-    type: "Open Space",
-    capacity: 20,
-    location: "Floor 1",
-    image: openSpace,
-    amenities: ["Wifi", "Coffee"],
-    available: false,
-    price: "$8/hr",
-    description: "An open collaborative space perfect for workshops, team activities, or casual working. Flexible seating arrangements available.",
-    features: ["Flexible layout", "Multiple power outlets", "Bean bags", "Standing desks", "Coffee bar access", "Collaborative tools"],
-    openHours: "8:00 AM - 10:00 PM",
-  },
-  {
-    id: "4",
-    name: "Quiet Booth A",
-    type: "Phone Booth",
-    capacity: 1,
-    location: "Floor 2",
-    image: phoneBooth,
-    amenities: ["Wifi"],
-    available: true,
-    price: "$5/hr",
-    description: "A compact phone booth for quick calls, video meetings, or private conversations. Fully soundproofed for confidentiality.",
-    features: ["Full soundproofing", "Video call lighting", "Mirror", "Coat hook", "Ventilation", "Power outlet"],
-    openHours: "24/7 Access",
-  },
-];
+export interface SpaceData {
+  id: string;
+  name: string;
+  type: string;
+  capacity: number;
+  location: string;
+  image: string | null;
+  amenities: string[];
+  available: boolean;
+  price: string;
+  description: string | null;
+  features: string[];
+  open_hours: string;
+}
+
+// Export for backward compatibility
+export const spacesData: SpaceData[] = [];
 
 interface SpacesScreenProps {
-  onSelectSpace?: (space: typeof spacesData[0]) => void;
+  onSelectSpace?: (space: SpaceData) => void;
 }
 
 export const SpacesScreen = ({ onSelectSpace }: SpacesScreenProps) => {
   const [activeType, setActiveType] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSpace, setSelectedSpace] = useState<typeof spacesData[0] | null>(null);
+  const [selectedSpace, setSelectedSpace] = useState<SpaceData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [spaces, setSpaces] = useState<SpaceData[]>([]);
+  const [loading, setLoading] = useState(true);
   const { createBooking, checkBookingConflict } = useBookings();
 
-  const filteredSpaces = spacesData.filter((space) => {
+  useEffect(() => {
+    const fetchSpaces = async () => {
+      const { data, error } = await supabase
+        .from("spaces")
+        .select("*")
+        .eq("available", true)
+        .order("name");
+      if (!error && data) {
+        setSpaces(data as SpaceData[]);
+      }
+      setLoading(false);
+    };
+    fetchSpaces();
+  }, []);
+
+  const getImage = (space: SpaceData) => space.image || fallbackImages[space.type] || meetingRoom;
+
+  const filteredSpaces = spaces.filter((space) => {
     const matchesType = activeType === "All" || space.type === activeType;
     const matchesSearch = space.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
 
   const handleSpaceClick = (id: string) => {
-    const space = spacesData.find((s) => s.id === id);
+    const space = spaces.find((s) => s.id === id);
     if (space && onSelectSpace) {
-      onSelectSpace(space);
+      onSelectSpace({ ...space, image: getImage(space) } as any);
     }
   };
 
   const handleBook = (id: string) => {
-    const space = spacesData.find((s) => s.id === id);
+    const space = spaces.find((s) => s.id === id);
     if (space) {
       setSelectedSpace(space);
       setIsModalOpen(true);
@@ -139,15 +127,21 @@ export const SpacesScreen = ({ onSelectSpace }: SpacesScreenProps) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
       <div className="px-5 pt-14 pb-4 safe-top">
         <h1 className="text-2xl font-bold text-foreground">Find Spaces</h1>
         <p className="text-muted-foreground mt-1">Book your perfect workspace</p>
       </div>
       
-      {/* Search */}
       <div className="px-5 mb-4">
         <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-card border border-border">
           <Search className="w-5 h-5 text-muted-foreground" />
@@ -164,7 +158,6 @@ export const SpacesScreen = ({ onSelectSpace }: SpacesScreenProps) => {
         </div>
       </div>
       
-      {/* Type Filter */}
       <div className="px-5 mb-6">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-5 px-5">
           {spaceTypes.map((type) => (
@@ -184,14 +177,12 @@ export const SpacesScreen = ({ onSelectSpace }: SpacesScreenProps) => {
         </div>
       </div>
       
-      {/* Results Count */}
       <div className="px-5 mb-4">
         <p className="text-sm text-muted-foreground">
           {filteredSpaces.length} spaces available
         </p>
       </div>
       
-      {/* Spaces Grid */}
       <div className="px-5">
         <div className="grid gap-4">
           {filteredSpaces.map((space, index) => (
@@ -201,15 +192,18 @@ export const SpacesScreen = ({ onSelectSpace }: SpacesScreenProps) => {
               onClick={() => handleSpaceClick(space.id)}
               className="cursor-pointer"
             >
-              <SpaceCard {...space} onBook={() => handleBook(space.id)} />
+              <SpaceCard
+                {...space}
+                image={getImage(space)}
+                onBook={() => handleBook(space.id)}
+              />
             </div>
           ))}
         </div>
       </div>
       
-      {/* Booking Modal */}
       <BookingModal
-        space={selectedSpace}
+        space={selectedSpace ? { id: selectedSpace.id, name: selectedSpace.name, type: selectedSpace.type, image: getImage(selectedSpace), price: selectedSpace.price } : null}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
