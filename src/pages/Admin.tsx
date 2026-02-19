@@ -534,21 +534,19 @@ function WorkspacesAdmin({ spaces, setSpaces, searchQuery }: WorkspacesAdminProp
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4 items-center">
-          <h3 className="text-sm font-semibold text-foreground">All Workspaces ({filtered.length})</h3>
-          <div className="flex gap-2">
-            <span className="text-[10px] px-2 py-1 rounded-full bg-success/10 text-success font-medium">
-              {spaces.filter(s => s.available).length} available
-            </span>
-            <span className="text-[10px] px-2 py-1 rounded-full bg-destructive/10 text-destructive font-medium">
-              {spaces.filter(s => !s.available).length} unavailable
-            </span>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">Workspaces ({filtered.length})</h3>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-medium">
+            {spaces.filter(s => s.available).length} available
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+            {spaces.filter(s => !s.available).length} unavailable
+          </span>
         </div>
         <button
           onClick={() => { setEditing(null); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-highlight w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" /> Add Workspace
         </button>
@@ -563,11 +561,11 @@ function WorkspacesAdmin({ spaces, setSpaces, searchQuery }: WorkspacesAdminProp
       )}
 
       {filtered.map(s => (
-        <div key={s.id} className="rounded-2xl bg-card border border-border p-4">
-          <div className="flex items-start gap-4">
-            {s.image && <img src={s.image} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+        <div key={s.id} className="rounded-2xl bg-card border border-border p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            {s.image && <img src={s.image} alt="" className="w-full sm:w-16 h-32 sm:h-16 rounded-xl object-cover shrink-0" />}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h4 className="text-sm font-semibold text-foreground">{s.name}</h4>
                 <span className={cn(
                   "text-[10px] px-2 py-0.5 rounded-full font-medium",
@@ -576,15 +574,17 @@ function WorkspacesAdmin({ spaces, setSpaces, searchQuery }: WorkspacesAdminProp
                   {s.available ? "Available" : "Unavailable"}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">{s.type} · {s.location} · Capacity: {s.capacity} · {s.price}</p>
+              <p className="text-xs text-muted-foreground">{s.type} · {s.location} · Cap: {s.capacity} · {s.price}</p>
               <div className="flex gap-1 mt-1.5 flex-wrap">
-                {(s.amenities || []).map((a: string) => (
+                {(s.amenities || []).slice(0, 3).map((a: string) => (
                   <span key={a} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{a}</span>
                 ))}
+                {(s.amenities || []).length > 3 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">+{s.amenities.length - 3}</span>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Hours: {s.open_hours}</p>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 self-end sm:self-start">
               <button
                 onClick={() => handleToggleAvailability(s.id, s.available)}
                 className={cn("p-2 rounded-lg transition-colors", s.available ? "hover:bg-destructive/10" : "hover:bg-success/10")}
