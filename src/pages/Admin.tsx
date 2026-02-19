@@ -221,7 +221,7 @@ export default function Admin() {
 
       {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-bottom">
-        <div className="grid grid-cols-5 w-full">
+        <div className="grid grid-cols-6 w-full">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -235,6 +235,13 @@ export default function Admin() {
               <span className="truncate max-w-full px-0.5">{tab.label}</span>
             </button>
           ))}
+          <button
+            onClick={() => signOut()}
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 text-[9px] font-medium text-destructive min-w-0"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span className="truncate max-w-full px-0.5">Sign Out</span>
+          </button>
         </div>
       </div>
 
