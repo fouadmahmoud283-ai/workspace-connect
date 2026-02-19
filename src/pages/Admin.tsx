@@ -220,30 +220,37 @@ export default function Admin() {
       </aside>
 
       {/* Mobile Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border flex safe-bottom">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearchQuery(""); }}
-            className={cn(
-              "flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-medium transition-all",
-              activeTab === tab.id ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <tab.icon className="w-5 h-5" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-bottom">
+        <div className="grid grid-cols-5 w-full">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSearchQuery(""); }}
+              className={cn(
+                "flex flex-col items-center justify-center gap-0.5 py-2.5 text-[9px] font-medium transition-all min-w-0",
+                activeTab === tab.id ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <tab.icon className="w-4 h-4 shrink-0" />
+              <span className="truncate max-w-full px-0.5">{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-24 md:pb-8">
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-foreground capitalize">{activeTab}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
+        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border px-4 sm:px-6 py-3 sm:py-4 safe-top">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            {/* Mobile: show logo + title row */}
+            <div className="flex items-center gap-3 md:hidden mb-1">
+              <img src={logo} alt="Backspace" className="w-8 h-8 rounded-lg object-cover" />
+              <span className="text-xs text-primary font-semibold uppercase tracking-wider">Admin</span>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-foreground capitalize">{activeTab}</h1>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
                 {activeTab === "overview" && "Dashboard summary"}
                 {activeTab === "bookings" && `${bookings.length} total reservations`}
                 {activeTab === "users" && `${users.length} registered users`}
@@ -252,20 +259,20 @@ export default function Admin() {
               </p>
             </div>
             {(activeTab === "bookings" || activeTab === "users" || activeTab === "workspaces") && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border w-64">
-                <Search className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border w-full sm:w-64 shrink-0">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`Search ${activeTab}...`}
-                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none min-w-0"
                 />
               </div>
             )}
           </div>
         </header>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {loadingData ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -334,13 +341,13 @@ export default function Admin() {
               {activeTab === "bookings" && (
                 <div className="space-y-4">
                   {/* Status Filters */}
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
                     {(["all", "confirmed", "cancelled", "completed"] as const).map(status => (
                       <button
                         key={status}
                         onClick={() => setBookingStatusFilter(status)}
                         className={cn(
-                          "px-4 py-2 rounded-xl text-sm font-medium transition-all capitalize",
+                          "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all capitalize whitespace-nowrap shrink-0",
                           bookingStatusFilter === status
                             ? "bg-primary text-primary-foreground"
                             : "bg-card border border-border text-muted-foreground hover:text-foreground"
