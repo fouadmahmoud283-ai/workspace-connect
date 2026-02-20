@@ -116,71 +116,36 @@ export const useMessages = () => {
   const createDirectConversation = async (otherUserId: string) => {
     if (!user) return { error: new Error("Not authenticated") };
 
-    // Check if a DM already exists
-    const { data: myConvs } = await supabase
-      .from("conversation_members")
-      .select("conversation_id")
-      .eq("user_id", user.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke("create-conversation", {
+        body: { type: "direct", otherUserId },
+      });
 
-    if (myConvs) {
-      for (const mc of myConvs) {
-        const { data: conv } = await supabase
-          .from("conversations")
-          .select("*")
-          .eq("id", mc.conversation_id)
-          .eq("type", "direct")
-          .single();
-
-        if (conv) {
-          const { data: otherMember } = await supabase
-            .from("conversation_members")
-            .select("user_id")
-            .eq("conversation_id", conv.id)
-            .eq("user_id", otherUserId)
-            .single();
-
-          if (otherMember) return { data: conv, error: null };
-        }
-      }
+      if (response.error) return { data: null, error: response.error };
+      
+      await fetchConversations();
+      return { data: response.data?.data, error: null };
+    } catch (err) {
+      return { data: null, error: err as Error };
     }
-
-    // Create new conversation
-    const { data: newConv, error: convError } = await supabase
-      .from("conversations")
-      .insert({ type: "direct" as const, created_by: user.id })
-      .select()
-      .single();
-
-    if (convError || !newConv) return { data: null, error: convError };
-
-    // Add both members
-    await supabase.from("conversation_members").insert([
-      { conversation_id: newConv.id, user_id: user.id },
-      { conversation_id: newConv.id, user_id: otherUserId },
-    ]);
-
-    await fetchConversations();
-    return { data: newConv, error: null };
   };
 
   const createGroupConversation = async (name: string, memberIds: string[]) => {
     if (!user) return { error: new Error("Not authenticated") };
 
-    const { data: newConv, error: convError } = await supabase
-      .from("conversations")
-      .insert({ type: "group" as const, name, created_by: user.id })
-      .select()
-      .single();
+    try {
+      const response = await supabase.functions.invoke("create-conversation", {
+        body: { type: "group", name, memberIds },
+      });
 
-    if (convError || !newConv) return { data: null, error: convError };
-
-    const allMembers = [user.id, ...memberIds.filter(id => id !== user.id)];
-    await supabase.from("conversation_members").insert(
-      allMembers.map(uid => ({ conversation_id: newConv.id, user_id: uid }))
-    );
-
-    await fetchConversations();
-    return { data: newConv, error: null };
+      if (response.error) return { data: null, error: response.error };
+      
+      await fetchConversations();
+      return { data: response.data?.data, error: null };
+    } catch (err) {
+      return { data: null, error: err as Error };
+    }
   };
 
   const sendMessage = async (conversationId: string, content: string) => {
